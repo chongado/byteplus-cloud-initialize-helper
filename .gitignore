@@ -1,0 +1,30 @@
+.DS_Store
+__pycache__/
+
+# Local credentials and operator-only env files
+.env
+.env.*
+!env.example
+
+# Terraform local state and working directories
+.terraform-teardown/
+terraform_script/.terraform/
+terraform_script/*.tfstate
+terraform_script/*.tfstate.*
+terraform_script/*.tfvars
+!terraform_script/var.tfvars.example
+terraform_script/*.tfplan
+terraform_script/*.plan
+terraform_script/crash.log
+terraform_script/crash.*.log
+
+# Generated access artifacts
+terraform_script/generated/
+*.pem
+*.ovpn
+
+# Local design/export artifacts
+.archify/
+
+# Private operator notes
+internal-readme.md

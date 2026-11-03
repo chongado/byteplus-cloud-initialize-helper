@@ -1,0 +1,60 @@
+#cloud-config
+# The selected Ubuntu image configures cloud-init to restart sshd, but ships
+# only ssh.service. Install its alias before the set-passwords module runs.
+bootcmd:
+  - [ln, -sf, /lib/systemd/system/ssh.service, /etc/systemd/system/sshd.service]
+  - [systemctl, daemon-reload]
+users:
+  - name: devops
+    gecos: devops
+    sudo: ALL=(ALL) NOPASSWD:ALL
+    shell: /bin/bash
+    lock_passwd: true
+    ssh_authorized_keys:
+      - ${ssh_key_generated}
+ssh_deletekeys: false
+ssh_pwauth: false
+package_update: true
+package_reboot_if_required: true
+runcmd:
+# Increase sshd session livetime
+  - echo DEBIAN_FRONTEND=noninteractive >> /home/devops/.bashrc
+  - echo NEEDRESTART_MODE=a >> /home/devops/.bashrc
+  - sed -i 's/^#ClientAliveInterval 0/ClientAliveInterval 10/' /etc/ssh/sshd_config
+  - sed -i 's/^#ClientAliveCountMax 3/ClientAliveCountMax 2400/' /etc/ssh/sshd_config
+# Disable root login
+  - sed -i '/PermitRootLogin/d' /etc/ssh/sshd_config
+  - echo "PermitRootLogin no" >> /etc/ssh/sshd_config
+  - sudo systemctl restart ssh
+# Install Dependencies
+  - sudo apt-get update
+  - sudo apt-get install -y bash-completion apt-transport-https ca-certificates gnupg software-properties-common jq vim curl unzip wget telnet net-tools inetutils-ping dnsutils apache2-utils iftop make
+# Install kubectl
+  - install -d -m 0755 /etc/apt/keyrings
+  - curl -fsSL https://pkgs.k8s.io/core:/stable:/v1.35/deb/Release.key | sudo gpg --dearmor -o /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  - sudo chmod 644 /etc/apt/keyrings/kubernetes-apt-keyring.gpg
+  - echo 'deb [signed-by=/etc/apt/keyrings/kubernetes-apt-keyring.gpg] https://pkgs.k8s.io/core:/stable:/v1.35/deb/ /' | sudo tee /etc/apt/sources.list.d/kubernetes.list
+  - sudo chmod 644 /etc/apt/sources.list.d/kubernetes.list
+  - sudo apt-get update
+  - sudo apt-get install -y kubectl
+# Install kubectl auto-complete
+  - kubectl completion bash | sudo tee /etc/bash_completion.d/kubectl > /dev/null
+  - sudo chmod a+r /etc/bash_completion.d/kubectl
+  - echo 'alias k=kubectl' >> /home/devops/.bashrc
+  - echo 'complete -o default -F __start_kubectl k' >> /home/devops/.bashrc
+  - echo 'complete -o default -F __start_kubectl kubectl' >> /home/devops/.bashrc
+  - echo 'source <(kubectl completion bash)' >> /home/devops/.bashrc
+# Install Helm
+  - curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-3
+  - sudo chmod 700 get_helm.sh
+  - ./get_helm.sh
+# Install K9S
+  - wget "https://github.com/derailed/k9s/releases/download/v0.32.5/k9s_Linux_amd64.tar.gz"
+  - tar -xvf k9s_Linux_amd64.tar.gz
+  - sudo mv k9s /usr/local/bin
+  - sudo rm -rf k9s_Linux_amd64.tar.gz
+# Create required directories
+  - mkdir -p /home/devops/.kube
+
+# Set permissions
+  - sudo chown -R devops:devops /home/devops/.kube

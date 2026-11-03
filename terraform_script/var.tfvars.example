@@ -1,0 +1,20 @@
+# Copy this file to var.tfvars, then review all values before deployment.
+# Authentication uses BYTEPLUS_ACCESS_KEY / BYTEPLUS_SECRET_KEY, not this file.
+region       = "ap-southeast-1"
+project_name = "app_project"
+project_id   = "app_project"
+environment  = "uat"
+
+# Optional FileNAS support.
+# Set enable_filenas = true to create the two FileNAS file systems.
+# Mount points are created only when nas_permission_group_id is provided.
+# If you prefer, set nas_permission_group_name and terraform.sh will resolve the
+# ID automatically through the local bp CLI before plan/apply.
+enable_filenas          = false
+nas_permission_group_id = ""
+nas_permission_group_name = ""
+
+# Tested values from 2026-10-29. Confirm availability in your account/region.
+vke_version      = "1.36"
+bastion_image_id = "image-yde3i2v6bwbhccnzezc6"
+node_image_id    = "image-yd7m36o070bhccsa6p6o"
